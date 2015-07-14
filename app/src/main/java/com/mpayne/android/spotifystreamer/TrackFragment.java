@@ -48,9 +48,6 @@ public class TrackFragment extends Fragment {
     private TrackAdapter mTrackAdapter;
     private TextView mMessage;
 
-    public TrackFragment() {
-    }
-
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {

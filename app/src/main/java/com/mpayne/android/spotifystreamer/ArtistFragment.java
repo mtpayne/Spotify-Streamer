@@ -52,18 +52,6 @@ public class ArtistFragment extends Fragment {
     private String mSearch;
     private TextView mMessage;
 
-
-    public ArtistFragment() {
-    }
-
-    /*
-    @Override
-    public void onStart() {
-        super.onStart();
-        new SearchArtistTask().execute("U2");
-    }
-    */
-
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
