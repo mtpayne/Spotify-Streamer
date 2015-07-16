@@ -15,7 +15,10 @@
  */
 package com.mpayne.android.spotifystreamer;
 
+import android.content.Context;
 import android.content.Intent;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Parcelable;
@@ -43,12 +46,17 @@ public class ArtistFragment extends Fragment {
     private final String LOG_TAG = ArtistFragment.class.getSimpleName();
     private final String KEY_ARTIST = "artist";
     private final String KEY_SEARCH = "search";
+    private final String KEY_MESSAGE = "message";
     private final String NO_RESULTS_FOUND_MESSAGE_PRE = "No results found for '";
     private final String NO_RESULTS_FOUND_MESSAGE_POST = "'. Please refine your search.";
+    private final String NETWORK_NOT_AVAILABLE_MESSAGE = "Network is not available. Please try again later.";
+    private final String SPOTIFY_NOT_AVAILABLE_MESSAGE = "We are experiencing issues. Please try again later.";
+
 
     private ArtistAdapter mArtistAdapter;
     private String mSearch;
-    private TextView mMessage;
+    private TextView mMessageTextView;
+    private String mMessage;
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -56,32 +64,29 @@ public class ArtistFragment extends Fragment {
 
         View rootView = inflater.inflate(R.layout.fragment_artist, container, false);
         ListView listView = (ListView) rootView.findViewById(R.id.listview_artist);
-        mMessage = (TextView) rootView.findViewById(R.id.textview_message);
+        mMessageTextView = (TextView) rootView.findViewById(R.id.textview_message);
 
         mArtistAdapter = new ArtistAdapter(getActivity(), R.layout.listitem_artist, new ArrayList<Artist>());
         listView.setAdapter(mArtistAdapter);
 
         // Check savedInstanceState for search text and artist list on orientation change
         if(savedInstanceState != null) {
-            String search = savedInstanceState.getString(KEY_SEARCH);
-            if(search != null) {
-                mSearch = search;
-            }
+            mSearch = savedInstanceState.getString(KEY_SEARCH);
+            mMessage = savedInstanceState.getString(KEY_MESSAGE);
+
             Parcelable[] parcelables = savedInstanceState.getParcelableArray(KEY_ARTIST);
             if(parcelables != null) {
                 for(Parcelable parcelable : parcelables) {
                     mArtistAdapter.add(((Artist) parcelable));
                 }
             }
-            // If searching but no results need to show message.
-            if(!mSearch.isEmpty() && mArtistAdapter.isEmpty()) {
-                mMessage.setText(NO_RESULTS_FOUND_MESSAGE_PRE + mSearch + NO_RESULTS_FOUND_MESSAGE_POST);
-                mMessage.setVisibility(View.VISIBLE);
-            }
         } else {
-            // Don't show empty message for spacing reasons.
-            mMessage.setVisibility(View.GONE);
+            // Default is empty search and message
+            mSearch = "";
+            mMessage = "";
         }
+
+        manageMessage();
 
         final SearchView searchView = (SearchView) rootView.findViewById(R.id.searchview_artist);
         searchView.setIconifiedByDefault(false);
@@ -110,6 +115,7 @@ public class ArtistFragment extends Fragment {
                 Artist artist = mArtistAdapter.getItem(position);
                 Intent intent = new Intent(getActivity(), DetailActivity.class)
                         .putExtra(Intent.EXTRA_TEXT, artist.id);
+                intent.putExtra(Intent.EXTRA_TITLE, artist.name);
                 startActivity(intent);
             }
 
@@ -129,18 +135,59 @@ public class ArtistFragment extends Fragment {
             outState.putParcelableArray(KEY_ARTIST, parcelables);
         }
         outState.putString(KEY_SEARCH, mSearch);
+        outState.putString(KEY_MESSAGE, mMessage);
         super.onSaveInstanceState(outState);
     }
 
-    void searchArtist(String artist) {
+    /**
+     * Checks for network availability.
+     *
+     * @return boolean true if network is available
+     */
+    private boolean isNetworkAvailable() {
+        ConnectivityManager cm =
+                (ConnectivityManager) getActivity().getSystemService(Context.CONNECTIVITY_SERVICE);
+
+        NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
+        return activeNetwork != null && activeNetwork.isConnectedOrConnecting();
+    }
+
+    /**
+     * Manages display of texview message.
+     * Clears list in event of network or SpotifyApi exceptions.
+     */
+    private void manageMessage() {
+        // Set textview if message has changed
+        if(!mMessageTextView.getText().toString().equalsIgnoreCase(mMessage)) {
+            mMessageTextView.setText(mMessage);
+        }
+
+        if(mMessage.isEmpty()) {
+            // Don't show empty message for spacing reasons
+            if(mMessageTextView.isShown()) {
+                mMessageTextView.setVisibility(View.GONE);
+            }
+        } else {
+            // Clear list if network or SpotifyApi errors
+            if(mMessage.equalsIgnoreCase(NETWORK_NOT_AVAILABLE_MESSAGE)
+                    || mMessage.equalsIgnoreCase(NETWORK_NOT_AVAILABLE_MESSAGE)) {
+                mArtistAdapter.clear();
+            }
+            if(!mMessageTextView.isShown()) {
+                mMessageTextView.setVisibility(View.VISIBLE);
+            }
+        }
+
+    }
+
+    private void searchArtist(String artist) {
         // Clear list if no search keys present.
         if (artist.isEmpty()) {
-            // Remove visibility if message was being displayed
-            if(mMessage.isShown()) {
-                mMessage.setVisibility(View.GONE);
-            }
-            mArtistAdapter.clear();
             mSearch = artist;
+            mArtistAdapter.clear();
+            // Remove visibility if message was being displayed
+            mMessage = artist;
+            manageMessage();
         } else {
             // Do new search only if keys have changed from previous search.
             if(!artist.equalsIgnoreCase(mSearch)) {
@@ -165,11 +212,24 @@ public class ArtistFragment extends Fragment {
                 return null;
             }
 
-            // Use SpotifyApi to search for artists.
-            SpotifyApi spotifyApi = new SpotifyApi();
-            SpotifyService spotifyService = spotifyApi.getService();
+            ArtistsPager artistsPager = null;
 
-            return spotifyService.searchArtists(params[0]);
+            if(isNetworkAvailable()) {
+                // Use SpotifyApi to search for artists.
+                SpotifyApi spotifyApi = new SpotifyApi();
+                SpotifyService spotifyService = spotifyApi.getService();
+                try {
+                    artistsPager = spotifyService.searchArtists(params[0]);
+                } catch (Exception e) {
+                    // Display message if issues with SpotifyApi
+                    mMessage = SPOTIFY_NOT_AVAILABLE_MESSAGE;
+                }
+            } else {
+                // Display network not available message
+                mMessage = NETWORK_NOT_AVAILABLE_MESSAGE;
+            }
+
+            return artistsPager;
         }
 
         @Override
@@ -178,7 +238,7 @@ public class ArtistFragment extends Fragment {
 
             // Prevent displaying list after mSearch has been cleared before previous process completes.
             if(mSearch.isEmpty()) {
-                mMessage.setVisibility(View.GONE);
+                manageMessage();
                 return;
             }
 
@@ -187,17 +247,16 @@ public class ArtistFragment extends Fragment {
                 for(kaaes.spotify.webapi.android.models.Artist artist : artistsPager.artists.items) {
                     mArtistAdapter.add(new Artist(artist));
                 }
-                //mArtistAdapter.notifyDataSetChanged();
+                // If searching but no results. Need to show message.
+                if(!mSearch.isEmpty() && mArtistAdapter.isEmpty()) {
+                    mMessage = NO_RESULTS_FOUND_MESSAGE_PRE + mSearch + NO_RESULTS_FOUND_MESSAGE_POST;
+                } else {
+                    mMessage = "";
+                }
             }
 
-            // Display message if no artists are returned from search
-            if(!mSearch.isEmpty() && mArtistAdapter.getCount() == 0) {
-                mMessage.setText(NO_RESULTS_FOUND_MESSAGE_PRE + mSearch + NO_RESULTS_FOUND_MESSAGE_POST);
-                mMessage.setVisibility(View.VISIBLE);
-            } else {
-                // Don't display empty message space.
-                mMessage.setVisibility(View.GONE);
-            }
+            manageMessage();
+
         }
     }
 }

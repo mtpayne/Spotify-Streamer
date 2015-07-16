@@ -15,6 +15,7 @@
  */
 package com.mpayne.android.spotifystreamer;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.support.v7.app.ActionBarActivity;
 
@@ -25,6 +26,15 @@ public class DetailActivity extends ActionBarActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_detail);
+        // Check Intent for artist name.
+        Intent intent = getIntent();
+        if (intent != null && intent.hasExtra(Intent.EXTRA_TITLE)) {
+            String artistName = intent.getStringExtra(Intent.EXTRA_TITLE);
+            android.support.v7.app.ActionBar actionBar = getSupportActionBar();
+            if(actionBar != null) {
+                getSupportActionBar().setSubtitle(artistName);
+            }
+        }
     }
 
 }

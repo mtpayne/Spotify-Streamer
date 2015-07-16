@@ -15,7 +15,10 @@
  */
 package com.mpayne.android.spotifystreamer;
 
+import android.content.Context;
 import android.content.Intent;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Parcelable;
@@ -43,10 +46,14 @@ public class TrackFragment extends Fragment {
 
     private final String LOG_TAG = TrackFragment.class.getSimpleName();
     private final String PARCELABLE_KEY_TRACKS = "tracks";
+    private final String KEY_MESSAGE = "message";
     private final String NO_TRACKS_FOUND_MESSAGE = "No tracks found. Please try another artist.";
+    private final String NETWORK_NOT_AVAILABLE_MESSAGE = "Network is not available. Please try again later.";
+    private final String SPOTIFY_NOT_AVAILABLE_MESSAGE = "We are experiencing issues. Please try again later.";
 
     private TrackAdapter mTrackAdapter;
-    private TextView mMessage;
+    private TextView mMessageTextView;
+    private String mMessage;
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -57,7 +64,7 @@ public class TrackFragment extends Fragment {
 
         mTrackAdapter = new TrackAdapter(getActivity(), R.layout.listitem_track, new ArrayList<Track>());
         mTrackListView.setAdapter(mTrackAdapter);
-        mMessage = (TextView) rootView.findViewById(R.id.textview_message);
+        mMessageTextView = (TextView) rootView.findViewById(R.id.textview_message);
 
         // Check Intent for artistId.
         String artistId = "";
@@ -74,22 +81,57 @@ public class TrackFragment extends Fragment {
                     mTrackAdapter.add(((Track) parcelable));
                 }
             }
-            // If no track data display message
-            if(mTrackAdapter.isEmpty()) {
-                mMessage.setText(NO_TRACKS_FOUND_MESSAGE);
-                mMessage.setVisibility(View.VISIBLE);
-            } else {
-                // Don't show empty message for spacing reasons.
-                mMessage.setVisibility(View.GONE);
-            }
+            mMessage = savedInstanceState.getString(KEY_MESSAGE);
+            manageMessage();
         } else {
-            // Don't show empty message for spacing reasons.
-            mMessage.setVisibility(View.GONE);
+            // Default empty message
+            mMessage = "";
             // Search for tracks.
             new SearchTrackTask().execute(artistId);
         }
 
         return rootView;
+    }
+
+    /**
+     * Checks for network availability.
+     *
+     * @return boolean true if network is available
+     */
+    private boolean isNetworkAvailable() {
+        ConnectivityManager cm =
+                (ConnectivityManager) getActivity().getSystemService(Context.CONNECTIVITY_SERVICE);
+
+        NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
+        return activeNetwork != null && activeNetwork.isConnectedOrConnecting();
+    }
+
+    /**
+     * Manages display of texview message.
+     * Clears list in event of network or SpotifyApi exceptions.
+     */
+    private void manageMessage() {
+        // Set textview if message has changed
+        if(!mMessageTextView.getText().toString().equalsIgnoreCase(mMessage)) {
+            mMessageTextView.setText(mMessage);
+        }
+
+        if(mMessage.isEmpty()) {
+            // Don't show empty message for spacing reasons
+            if(mMessageTextView.isShown()) {
+                mMessageTextView.setVisibility(View.GONE);
+            }
+        } else {
+            // Clear list if network or SpotifyApi errors
+            if(mMessage.equalsIgnoreCase(NETWORK_NOT_AVAILABLE_MESSAGE)
+                    || mMessage.equalsIgnoreCase(NETWORK_NOT_AVAILABLE_MESSAGE)) {
+                mTrackAdapter.clear();
+            }
+            if(!mMessageTextView.isShown()) {
+                mMessageTextView.setVisibility(View.VISIBLE);
+            }
+        }
+
     }
 
     @Override
@@ -102,6 +144,7 @@ public class TrackFragment extends Fragment {
             }
             outState.putParcelableArray(PARCELABLE_KEY_TRACKS, parcelables);
         }
+        outState.putString(KEY_MESSAGE, mMessage);
         super.onSaveInstanceState(outState);
     }
 
@@ -120,13 +163,25 @@ public class TrackFragment extends Fragment {
                 return null;
             }
 
-            // Use SpotifyApi to search for tracks using artistId and Country code.
-            SpotifyApi spotifyApi = new SpotifyApi();
-            SpotifyService spotifyService = spotifyApi.getService();
+            Tracks tracks = null;
 
-            Map<String, Object> options = new HashMap<>();
-            options.put(SpotifyService.COUNTRY, Locale.getDefault().getCountry());
-            return spotifyService.getArtistTopTrack(params[0], options);
+            if(isNetworkAvailable()) {
+                // Use SpotifyApi to search for tracks.
+                Map<String, Object> options = new HashMap<>();
+                options.put(SpotifyService.COUNTRY, Locale.getDefault().getCountry());
+                SpotifyApi spotifyApi = new SpotifyApi();
+                SpotifyService spotifyService = spotifyApi.getService();
+                try {
+                    tracks = spotifyService.getArtistTopTrack(params[0], options);
+                } catch (Exception e) {
+                    // Display message if issues with SpotifyApi
+                    mMessage = SPOTIFY_NOT_AVAILABLE_MESSAGE;
+                }
+            } else {
+                // Display network not available message
+                mMessage = NETWORK_NOT_AVAILABLE_MESSAGE;
+            }
+            return tracks;
         }
 
         @Override
@@ -140,10 +195,10 @@ public class TrackFragment extends Fragment {
                 }
                 // Display message if no tracks returned from search.
                 if(mTrackAdapter.isEmpty()) {
-                    mMessage.setText(NO_TRACKS_FOUND_MESSAGE);
-                    mMessage.setVisibility(View.VISIBLE);
+                    mMessage = NO_TRACKS_FOUND_MESSAGE;
                 }
             }
+            manageMessage();
         }
 
     }
