@@ -9,13 +9,12 @@
               android:paddingTop="@dimen/activity_vertical_margin"
               tools:context=".ArtistFragment">
 
-    <EditText
-        android:id="@+id/edittext_search"
+    <SearchView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="@string/hint_search"
-        android:inputType="text"/>
-
+        android:id="@+id/searchview_artist"
+        android:iconifiedByDefault="false"
+        android:queryHint="@string/hint_search"/>
     <TextView
         android:id="@+id/textview_message"
         android:layout_height="wrap_content"

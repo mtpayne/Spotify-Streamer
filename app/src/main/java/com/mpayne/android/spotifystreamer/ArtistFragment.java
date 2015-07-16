@@ -20,14 +20,12 @@ import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Parcelable;
 import android.support.v4.app.Fragment;
-import android.text.Editable;
-import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
-import android.widget.EditText;
 import android.widget.ListView;
+import android.widget.SearchView;
 import android.widget.TextView;
 
 import java.util.ArrayList;
@@ -63,9 +61,6 @@ public class ArtistFragment extends Fragment {
         mArtistAdapter = new ArtistAdapter(getActivity(), R.layout.listitem_artist, new ArrayList<Artist>());
         listView.setAdapter(mArtistAdapter);
 
-        // Start with empty search.
-        mSearch = "";
-
         // Check savedInstanceState for search text and artist list on orientation change
         if(savedInstanceState != null) {
             String search = savedInstanceState.getString(KEY_SEARCH);
@@ -88,33 +83,22 @@ public class ArtistFragment extends Fragment {
             mMessage.setVisibility(View.GONE);
         }
 
+        final SearchView searchView = (SearchView) rootView.findViewById(R.id.searchview_artist);
+        searchView.setIconifiedByDefault(false);
         // Dynamically update artist list as user enters search keys.
-        final EditText editText = (EditText) rootView.findViewById(R.id.edittext_search);
-        editText.addTextChangedListener(new TextWatcher() {
-            @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+        searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
 
+            @Override
+            public boolean onQueryTextSubmit(String query) {
+                // Clear focus to remove keyboard and display list
+                searchView.clearFocus();
+                return true;
             }
 
             @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {
-                // Clear list if no search keys present.
-                if (s.toString().isEmpty()) {
-                    mArtistAdapter.clear();
-                    mSearch = s.toString();
-                } else {
-                    // Do new search only if keys have changed from previous search.
-                    if(!s.toString().equalsIgnoreCase(mSearch)) {
-                        new SearchArtistTask().execute(s.toString());
-                        mSearch = s.toString();
-                    }
-                }
-
-            }
-
-            @Override
-            public void afterTextChanged(Editable s) {
-
+            public boolean onQueryTextChange(String newText) {
+                searchArtist(newText);
+                return true;
             }
         });
 
@@ -148,6 +132,20 @@ public class ArtistFragment extends Fragment {
         super.onSaveInstanceState(outState);
     }
 
+    void searchArtist(String artist) {
+        // Clear list if no search keys present.
+        if (artist.isEmpty()) {
+            mArtistAdapter.clear();
+            mSearch = artist;
+        } else {
+            // Do new search only if keys have changed from previous search.
+            if(!artist.equalsIgnoreCase(mSearch)) {
+                new SearchArtistTask().execute(artist);
+                mSearch = artist;
+            }
+        }
+    }
+
     /**
      *  Background task for retrieving and populating artist list.
      */
@@ -174,7 +172,7 @@ public class ArtistFragment extends Fragment {
         protected void onPostExecute(ArtistsPager artistsPager) {
             super.onPostExecute(artistsPager);
 
-            // Prevent displaying list after mSearch has been cleared before process completes.
+            // Prevent displaying list after mSearch has been cleared before previous process completes.
             if(mSearch.isEmpty()) {
                 mMessage.setVisibility(View.GONE);
                 return;
