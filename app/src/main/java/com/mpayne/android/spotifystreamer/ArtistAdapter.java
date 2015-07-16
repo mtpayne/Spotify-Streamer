@@ -16,6 +16,7 @@
 package com.mpayne.android.spotifystreamer;
 
 import android.content.Context;
+import android.util.Patterns;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -54,7 +55,7 @@ public class ArtistAdapter extends ArrayAdapter<Artist> {
 
         Artist artist = artists.get(position);
         viewHolder.artistName.setText(artist.name);
-        if(artist.imageUrlSmall != null)
+        if(artist.imageUrlSmall != null && Patterns.WEB_URL.matcher(artist.imageUrlSmall).matches())
         {
             Picasso.with(getContext()).load(artist.imageUrlSmall).into(viewHolder.artistImage);
         }

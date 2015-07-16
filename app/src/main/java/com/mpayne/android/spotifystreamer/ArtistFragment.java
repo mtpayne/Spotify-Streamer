@@ -135,6 +135,10 @@ public class ArtistFragment extends Fragment {
     void searchArtist(String artist) {
         // Clear list if no search keys present.
         if (artist.isEmpty()) {
+            // Remove visibility if message was being displayed
+            if(mMessage.isShown()) {
+                mMessage.setVisibility(View.GONE);
+            }
             mArtistAdapter.clear();
             mSearch = artist;
         } else {
