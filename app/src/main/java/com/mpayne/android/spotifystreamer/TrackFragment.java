@@ -21,7 +21,6 @@ import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.AsyncTask;
 import android.os.Bundle;
-import android.os.Parcelable;
 import android.support.v4.app.Fragment;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -31,6 +30,7 @@ import android.widget.TextView;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
@@ -45,7 +45,7 @@ import kaaes.spotify.webapi.android.models.Tracks;
 public class TrackFragment extends Fragment {
 
     private final String LOG_TAG = TrackFragment.class.getSimpleName();
-    private final String PARCELABLE_KEY_TRACKS = "tracks";
+    private final String KEY_TRACKS = "tracks";
     private final String KEY_MESSAGE = "message";
     private final String NO_TRACKS_FOUND_MESSAGE = "No tracks found. Please try another artist.";
     private final String NETWORK_NOT_AVAILABLE_MESSAGE = "Network is not available. Please try again later.";
@@ -75,11 +75,8 @@ public class TrackFragment extends Fragment {
 
         // Check savedInstanceState for track list and message on orientation change.
         if (savedInstanceState != null) {
-            Parcelable[] parcelables = savedInstanceState.getParcelableArray(PARCELABLE_KEY_TRACKS);
-            if (parcelables != null) {
-                for (Parcelable parcelable : parcelables) {
-                    mTrackAdapter.add(((Track) parcelable));
-                }
+            if(savedInstanceState.containsKey(KEY_TRACKS)) {
+                mTrackAdapter.addAll(savedInstanceState.<Track>getParcelableArrayList(KEY_TRACKS));
             }
             mMessage = savedInstanceState.getString(KEY_MESSAGE);
             manageMessage();
@@ -118,18 +115,14 @@ public class TrackFragment extends Fragment {
 
         if(mMessage.isEmpty()) {
             // Don't show empty message for spacing reasons
-            if(mMessageTextView.isShown()) {
-                mMessageTextView.setVisibility(View.GONE);
-            }
+            mMessageTextView.setVisibility(View.GONE);
         } else {
             // Clear list if network or SpotifyApi errors
             if(mMessage.equalsIgnoreCase(NETWORK_NOT_AVAILABLE_MESSAGE)
                     || mMessage.equalsIgnoreCase(NETWORK_NOT_AVAILABLE_MESSAGE)) {
                 mTrackAdapter.clear();
             }
-            if(!mMessageTextView.isShown()) {
-                mMessageTextView.setVisibility(View.VISIBLE);
-            }
+            mMessageTextView.setVisibility(View.VISIBLE);
         }
 
     }
@@ -138,11 +131,7 @@ public class TrackFragment extends Fragment {
     public void onSaveInstanceState(Bundle outState) {
         // Save track list if available.
         if (mTrackAdapter.getCount() > 0) {
-            Parcelable[] parcelables = new Parcelable[mTrackAdapter.getCount()];
-            for (int i = 0; i < mTrackAdapter.getCount(); i++) {
-                parcelables[i] = mTrackAdapter.getItem(i);
-            }
-            outState.putParcelableArray(PARCELABLE_KEY_TRACKS, parcelables);
+            outState.putParcelableArrayList(KEY_TRACKS, mTrackAdapter.tracks);
         }
         outState.putString(KEY_MESSAGE, mMessage);
         super.onSaveInstanceState(outState);
@@ -190,9 +179,12 @@ public class TrackFragment extends Fragment {
 
             if (tracks != null) {
                 mTrackAdapter.clear();
+                // Create a tracks list then add to adapter to prevent multiple refreshes
+                List<Track> trackList = new ArrayList<>();
                 for (kaaes.spotify.webapi.android.models.Track track : tracks.tracks) {
-                    mTrackAdapter.add(new Track(track));
+                    trackList.add(new Track(track));
                 }
+                mTrackAdapter.addAll(trackList);
                 // Display message if no tracks returned from search.
                 if(mTrackAdapter.isEmpty()) {
                     mMessage = NO_TRACKS_FOUND_MESSAGE;

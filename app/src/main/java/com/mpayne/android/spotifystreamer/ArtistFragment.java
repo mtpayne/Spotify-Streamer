@@ -21,7 +21,6 @@ import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.AsyncTask;
 import android.os.Bundle;
-import android.os.Parcelable;
 import android.support.v4.app.Fragment;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -32,6 +31,7 @@ import android.widget.SearchView;
 import android.widget.TextView;
 
 import java.util.ArrayList;
+import java.util.List;
 
 import kaaes.spotify.webapi.android.SpotifyApi;
 import kaaes.spotify.webapi.android.SpotifyService;
@@ -73,12 +73,8 @@ public class ArtistFragment extends Fragment {
         if(savedInstanceState != null) {
             mSearch = savedInstanceState.getString(KEY_SEARCH);
             mMessage = savedInstanceState.getString(KEY_MESSAGE);
-
-            Parcelable[] parcelables = savedInstanceState.getParcelableArray(KEY_ARTIST);
-            if(parcelables != null) {
-                for(Parcelable parcelable : parcelables) {
-                    mArtistAdapter.add(((Artist) parcelable));
-                }
+            if(savedInstanceState.containsKey(KEY_ARTIST)) {
+                mArtistAdapter.addAll(savedInstanceState.<Artist>getParcelableArrayList(KEY_ARTIST));
             }
         } else {
             // Default is empty search and message
@@ -128,11 +124,7 @@ public class ArtistFragment extends Fragment {
     public void onSaveInstanceState(Bundle outState) {
         // Save artist list and search key data if available.
         if (mArtistAdapter.getCount() > 0) {
-            Parcelable[] parcelables = new Parcelable[mArtistAdapter.getCount()];
-            for (int i = 0; i < mArtistAdapter.getCount(); i++) {
-                parcelables[i] = mArtistAdapter.getItem(i);
-            }
-            outState.putParcelableArray(KEY_ARTIST, parcelables);
+            outState.putParcelableArrayList(KEY_ARTIST, mArtistAdapter.artists);
         }
         outState.putString(KEY_SEARCH, mSearch);
         outState.putString(KEY_MESSAGE, mMessage);
@@ -164,18 +156,14 @@ public class ArtistFragment extends Fragment {
 
         if(mMessage.isEmpty()) {
             // Don't show empty message for spacing reasons
-            if(mMessageTextView.isShown()) {
-                mMessageTextView.setVisibility(View.GONE);
-            }
+            mMessageTextView.setVisibility(View.GONE);
         } else {
             // Clear list if network or SpotifyApi errors
             if(mMessage.equalsIgnoreCase(NETWORK_NOT_AVAILABLE_MESSAGE)
                     || mMessage.equalsIgnoreCase(NETWORK_NOT_AVAILABLE_MESSAGE)) {
                 mArtistAdapter.clear();
             }
-            if(!mMessageTextView.isShown()) {
-                mMessageTextView.setVisibility(View.VISIBLE);
-            }
+            mMessageTextView.setVisibility(View.VISIBLE);
         }
 
     }
@@ -244,9 +232,12 @@ public class ArtistFragment extends Fragment {
 
             if(artistsPager != null) {
                 mArtistAdapter.clear();
+                // Create an artist list then add to adapter to prevent multiple refreshes
+                List<Artist> artistList = new ArrayList<>();
                 for(kaaes.spotify.webapi.android.models.Artist artist : artistsPager.artists.items) {
-                    mArtistAdapter.add(new Artist(artist));
+                    artistList.add(new Artist(artist));
                 }
+                mArtistAdapter.addAll(artistList);
                 // If searching but no results. Need to show message.
                 if(!mSearch.isEmpty() && mArtistAdapter.isEmpty()) {
                     mMessage = NO_RESULTS_FOUND_MESSAGE_PRE + mSearch + NO_RESULTS_FOUND_MESSAGE_POST;

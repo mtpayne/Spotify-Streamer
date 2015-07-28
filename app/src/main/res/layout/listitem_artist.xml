@@ -9,12 +9,15 @@
         android:id="@+id/imageview_artist"
         android:layout_width="60dp"
         android:layout_height="60dp"
+        android:paddingBottom="1dp"
         android:paddingRight="8dp"
+        android:paddingTop="1dp"
         android:src="@drawable/grey_square"/>
 
     <TextView
         android:id="@+id/textview_artist_name"
-        android:layout_width="match_parent"
+        android:layout_width="0dp"
+        android:layout_weight="1"
         android:layout_height="match_parent"
         android:gravity="center_vertical"
         android:textSize="12sp"/>
