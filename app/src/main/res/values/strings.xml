@@ -9,4 +9,7 @@
 
     <string name="hint_search">Search for Artists</string>
 
+    <string name="title_activity_music_player">MusicPlayerActivity</string>
+    <string name="hello_world">Hello world!</string>
+
 </resources>

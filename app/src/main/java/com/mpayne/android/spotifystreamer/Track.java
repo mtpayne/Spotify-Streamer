@@ -39,6 +39,7 @@ public class Track implements Parcelable {
     String albumName;
     String imageUrlSmall;
     String imageUrlLarge;
+    String previewUrl;
 
     /**
      * Constructor taking in kaaes.spotify.webapi.android.models.Track
@@ -86,6 +87,7 @@ public class Track implements Parcelable {
             }
 
         }
+        this.previewUrl = track.preview_url;
     }
 
     public Track(Parcel in) {
@@ -93,6 +95,8 @@ public class Track implements Parcelable {
         albumName = in.readString();
         imageUrlSmall = in.readString();
         imageUrlLarge = in.readString();
+        previewUrl = in.readString();
+
     }
 
     @Override
@@ -106,6 +110,7 @@ public class Track implements Parcelable {
         dest.writeString(albumName);
         dest.writeString(imageUrlSmall);
         dest.writeString(imageUrlLarge);
+        dest.writeString(previewUrl);
     }
 
 

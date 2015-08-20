@@ -15,8 +15,8 @@
  */
 package com.mpayne.android.spotifystreamer;
 
+import android.app.Activity;
 import android.content.Context;
-import android.content.Intent;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.AsyncTask;
@@ -57,6 +57,27 @@ public class ArtistFragment extends Fragment {
     private String mSearch;
     private TextView mMessageTextView;
     private String mMessage;
+
+    Callback mCallback;
+
+    // Container Activity must implement this interface
+    public interface Callback {
+        public void onArtistSelected(Artist artist);
+    }
+
+    @Override
+    public void onAttach(Activity activity) {
+        super.onAttach(activity);
+
+        // This makes sure that the container activity has implemented
+        // the callback interface. If not, it throws an exception
+        try {
+            mCallback = (Callback) activity;
+        } catch (ClassCastException e) {
+            throw new ClassCastException(activity.toString()
+                    + " must implement Callback");
+        }
+    }
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -109,10 +130,13 @@ public class ArtistFragment extends Fragment {
             @Override
             public void onItemClick(AdapterView<?> adapterView, View view, int position, long l) {
                 Artist artist = mArtistAdapter.getItem(position);
+                /*
                 Intent intent = new Intent(getActivity(), DetailActivity.class)
                         .putExtra(Intent.EXTRA_TEXT, artist.id);
                 intent.putExtra(Intent.EXTRA_TITLE, artist.name);
                 startActivity(intent);
+                */
+                ((Callback) getActivity()).onArtistSelected(artist);
             }
 
         });

@@ -22,9 +22,11 @@ import android.net.NetworkInfo;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentManager;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
 import android.widget.ListView;
 import android.widget.TextView;
 
@@ -59,19 +61,24 @@ public class TrackFragment extends Fragment {
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
 
+        // Check Intent for artistId.
+        String artistId = "";
+        Bundle arguments = getArguments();
+        if (arguments != null) {
+            artistId = arguments.getString(Intent.EXTRA_TEXT);
+        } else {
+            Intent intent = getActivity().getIntent();
+            if (intent != null && intent.hasExtra(Intent.EXTRA_TEXT)) {
+                artistId = intent.getStringExtra(Intent.EXTRA_TEXT);
+            }
+        }
+
         View rootView = inflater.inflate(R.layout.fragment_track, container, false);
         ListView mTrackListView = (ListView) rootView.findViewById(R.id.listview_track);
 
         mTrackAdapter = new TrackAdapter(getActivity(), R.layout.listitem_track, new ArrayList<Track>());
         mTrackListView.setAdapter(mTrackAdapter);
         mMessageTextView = (TextView) rootView.findViewById(R.id.textview_message);
-
-        // Check Intent for artistId.
-        String artistId = "";
-        Intent intent = getActivity().getIntent();
-        if (intent != null && intent.hasExtra(Intent.EXTRA_TEXT)) {
-            artistId = intent.getStringExtra(Intent.EXTRA_TEXT);
-        }
 
         // Check savedInstanceState for track list and message on orientation change.
         if (savedInstanceState != null) {
@@ -86,6 +93,22 @@ public class TrackFragment extends Fragment {
             // Search for tracks.
             new SearchTrackTask().execute(artistId);
         }
+
+        mTrackListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+
+            @Override
+            public void onItemClick(AdapterView<?> adapterView, View view, int position, long l) {
+                /*
+                Intent intent = new Intent(getActivity(), MusicPlayerActivity.class)
+                        .putExtra(Intent.EXTRA_TEXT, "TEST");
+                startActivity(intent);
+                */
+                FragmentManager fm = getFragmentManager();
+                MusicPlayerActivityFragment dialogFragment = new MusicPlayerActivityFragment ();
+                dialogFragment.show(fm, "Sample Fragment");
+            }
+
+        });
 
         return rootView;
     }
