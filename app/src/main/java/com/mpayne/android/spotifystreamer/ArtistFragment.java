@@ -15,7 +15,6 @@
  */
 package com.mpayne.android.spotifystreamer;
 
-import android.app.Activity;
 import android.content.Context;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
@@ -43,7 +42,7 @@ import kaaes.spotify.webapi.android.models.ArtistsPager;
  */
 public class ArtistFragment extends Fragment {
 
-    private final String LOG_TAG = ArtistFragment.class.getSimpleName();
+    //private final String TAG = ArtistFragment.class.getSimpleName();
     private final String KEY_ARTIST = "artist";
     private final String KEY_SEARCH = "search";
     private final String KEY_MESSAGE = "message";
@@ -58,25 +57,11 @@ public class ArtistFragment extends Fragment {
     private TextView mMessageTextView;
     private String mMessage;
 
-    Callback mCallback;
-
-    // Container Activity must implement this interface
+    /**
+     * Interface activities must implement when using this fragment.
+     */
     public interface Callback {
-        public void onArtistSelected(Artist artist);
-    }
-
-    @Override
-    public void onAttach(Activity activity) {
-        super.onAttach(activity);
-
-        // This makes sure that the container activity has implemented
-        // the callback interface. If not, it throws an exception
-        try {
-            mCallback = (Callback) activity;
-        } catch (ClassCastException e) {
-            throw new ClassCastException(activity.toString()
-                    + " must implement Callback");
-        }
+        void onArtistSelected(Artist artist);
     }
 
     @Override
@@ -124,18 +109,12 @@ public class ArtistFragment extends Fragment {
             }
         });
 
-        // Set intent(artist.id) from list item click.
+        // Let activity handle when artist is selected
         listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
 
             @Override
             public void onItemClick(AdapterView<?> adapterView, View view, int position, long l) {
                 Artist artist = mArtistAdapter.getItem(position);
-                /*
-                Intent intent = new Intent(getActivity(), DetailActivity.class)
-                        .putExtra(Intent.EXTRA_TEXT, artist.id);
-                intent.putExtra(Intent.EXTRA_TITLE, artist.name);
-                startActivity(intent);
-                */
                 ((Callback) getActivity()).onArtistSelected(artist);
             }
 

@@ -3,13 +3,12 @@
 
     <string name="app_name">Spotify Streamer</string>
 
+    <string name="action_now_playing">Now Playing</string>
     <string name="action_settings">Settings</string>
-
-    <string name="title_activity_detail">Top 10 Tracks</string>
 
     <string name="hint_search">Search for Artists</string>
 
-    <string name="title_activity_music_player">MusicPlayerActivity</string>
-    <string name="hello_world">Hello world!</string>
+    <string name="title_activity_detail">Top 10 Tracks</string>
+    <string name="title_activity_music_player">Spotify Streamer</string>
 
 </resources>

@@ -87,10 +87,6 @@ public class Artist implements Parcelable {
                 imageUrlLarge = imageUrlSmall;
             }
 
-        } else {
-            //grey_square image
-            //imageUrlSmall = R.drawable.grey_square;
-            //imageUrlLarge = R.drawable.grey_square;
         }
     }
 
@@ -114,4 +110,7 @@ public class Artist implements Parcelable {
         dest.writeString(imageUrlLarge);
     }
 
+    public String getName() {
+        return name;
+    }
 }

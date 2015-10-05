@@ -35,6 +35,7 @@ public class Track implements Parcelable {
         }
     };
 
+    String id;
     String name;
     String albumName;
     String imageUrlSmall;
@@ -47,6 +48,7 @@ public class Track implements Parcelable {
      */
     public Track(kaaes.spotify.webapi.android.models.Track track) {
         super();
+        this.id = track.id;
         this.name = track.name;
         this.albumName = track.album.name;
         if (!track.album.images.isEmpty()) {
@@ -63,22 +65,20 @@ public class Track implements Parcelable {
                         image1Dimension = temp;
                         imageUrlSmall = image.url;
                     }
+                    // set image2Dimension first time
+                    if(image2Dimension == 0) {
+                        image2Dimension = temp;
+                        imageUrlLarge = image.url;
+                    }
                     // set image1Dimension to smallest possible
                     if(temp < image1Dimension) {
                         image1Dimension = temp;
                         imageUrlSmall = image.url;
                     }
                     // set image2Dimension to smallest possible but larger than image1Dimension
-                    if(temp > image1Dimension) {
-                        // set image2Dimension first time
-                        if(image2Dimension == 0) {
-                            image2Dimension = temp;
-                            imageUrlLarge = image.url;
-                        }
-                        if(temp < image2Dimension) {
-                            image2Dimension = temp;
-                            imageUrlLarge = image.url;
-                        }
+                    if(temp > image1Dimension && temp < image2Dimension) {
+                        image2Dimension = temp;
+                        imageUrlLarge = image.url;
                     }
                 }
             } else {
@@ -91,6 +91,7 @@ public class Track implements Parcelable {
     }
 
     public Track(Parcel in) {
+        id = in.readString();
         name = in.readString();
         albumName = in.readString();
         imageUrlSmall = in.readString();
@@ -106,6 +107,7 @@ public class Track implements Parcelable {
 
     @Override
     public void writeToParcel(Parcel dest, int flags) {
+        dest.writeString(id);
         dest.writeString(name);
         dest.writeString(albumName);
         dest.writeString(imageUrlSmall);
@@ -113,5 +115,19 @@ public class Track implements Parcelable {
         dest.writeString(previewUrl);
     }
 
+    public String getId() {
+        return id;
+    }
 
+    public String getName() {
+        return name;
+    }
+
+    public String getImageUrlSmall() {
+        return imageUrlSmall;
+    }
+
+    public String getPreviewUrl() {
+        return previewUrl;
+    }
 }

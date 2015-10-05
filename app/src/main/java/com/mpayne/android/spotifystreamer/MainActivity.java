@@ -15,67 +15,21 @@
  */
 package com.mpayne.android.spotifystreamer;
 
-import android.content.Intent;
 import android.os.Bundle;
-import android.support.v4.app.FragmentTransaction;
-import android.support.v7.app.ActionBarActivity;
 
 
-public class MainActivity extends ActionBarActivity implements  ArtistFragment.Callback {
+public class MainActivity extends BaseActivity {
 
     private final String TAG = MainActivity.class.getSimpleName();
-    private boolean mTwoPane;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.main);
-        mTwoPane = getResources().getBoolean(R.bool.two_pane);
-        if(savedInstanceState == null) {
-            if(mTwoPane) {
-                getSupportFragmentManager().beginTransaction()
-                        .replace(R.id.fragment_track, new TrackFragment(), TrackFragment.class.getSimpleName())
-                        .commit();
-            }
-        }
-    }
-
-    @Override
-    public void onArtistSelected(Artist artist) {
-        if(mTwoPane) {
-            android.support.v7.app.ActionBar actionBar = getSupportActionBar();
-            if(actionBar != null) {
-                getSupportActionBar().setSubtitle(artist.name);
-            }
-
-            Bundle args = new Bundle();
-            args.putString(Intent.EXTRA_TEXT, artist.id);
-            args.putString(Intent.EXTRA_TITLE, artist.name);
-
-            TrackFragment fragment = new TrackFragment();
-            fragment.setArguments(args);
-
-            /*
+        if(savedInstanceState == null && mTwoPane) {
             getSupportFragmentManager().beginTransaction()
-                    .replace(R.id.fragment_track, fragment, TrackFragment.class.getSimpleName())
+                    .replace(R.id.fragment_track, new TrackFragment(), TrackFragment.class.getSimpleName())
                     .commit();
-            */
-
-            FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
-
-            // Replace whatever is in the fragment_container view with this fragment,
-            // and add the transaction to the back stack so the user can navigate back
-            transaction.replace(R.id.fragment_track, fragment, TrackFragment.class.getSimpleName());
-            transaction.addToBackStack(null);
-
-            // Commit the transaction
-            transaction.commit();
-
-        } else {
-            Intent intent = new Intent(this, DetailActivity.class)
-                    .putExtra(Intent.EXTRA_TEXT, artist.id);
-            intent.putExtra(Intent.EXTRA_TITLE, artist.name);
-            startActivity(intent);
         }
     }
 

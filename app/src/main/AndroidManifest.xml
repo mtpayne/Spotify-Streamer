@@ -36,6 +36,7 @@
                 android:name="android.support.PARENT_ACTIVITY"
                 android:value="com.mpayne.android.spotifystreamer.DetailActivity" />
         </activity>
+        <service android:name=".service.MusicPlayerService" />
     </application>
 
 </manifest>

@@ -22,7 +22,6 @@ import android.net.NetworkInfo;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
-import android.support.v4.app.FragmentManager;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -57,6 +56,15 @@ public class TrackFragment extends Fragment {
     private TextView mMessageTextView;
     private String mMessage;
 
+    private Artist mArtist;
+
+    /**
+     * Interface activities must implement when using this fragment.
+     */
+    public interface Callback {
+        void onTrackSelected(Artist artist, ArrayList<Track> tracks, int position);
+    }
+
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
@@ -66,10 +74,12 @@ public class TrackFragment extends Fragment {
         Bundle arguments = getArguments();
         if (arguments != null) {
             artistId = arguments.getString(Intent.EXTRA_TEXT);
+            mArtist = arguments.getParcelable(Artist.class.getSimpleName());
         } else {
             Intent intent = getActivity().getIntent();
             if (intent != null && intent.hasExtra(Intent.EXTRA_TEXT)) {
                 artistId = intent.getStringExtra(Intent.EXTRA_TEXT);
+                mArtist = intent.getParcelableExtra(Artist.class.getSimpleName());
             }
         }
 
@@ -91,21 +101,18 @@ public class TrackFragment extends Fragment {
             // Default empty message
             mMessage = "";
             // Search for tracks.
-            new SearchTrackTask().execute(artistId);
+            if(!artistId.isEmpty()) {
+                new SearchTrackTask().execute(artistId);
+            }
+
         }
 
+        // Let activity handle when track is selected
         mTrackListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
 
             @Override
             public void onItemClick(AdapterView<?> adapterView, View view, int position, long l) {
-                /*
-                Intent intent = new Intent(getActivity(), MusicPlayerActivity.class)
-                        .putExtra(Intent.EXTRA_TEXT, "TEST");
-                startActivity(intent);
-                */
-                FragmentManager fm = getFragmentManager();
-                MusicPlayerActivityFragment dialogFragment = new MusicPlayerActivityFragment ();
-                dialogFragment.show(fm, "Sample Fragment");
+                ((Callback) getActivity()).onTrackSelected(mArtist, mTrackAdapter.tracks, position);
             }
 
         });
@@ -153,7 +160,7 @@ public class TrackFragment extends Fragment {
     @Override
     public void onSaveInstanceState(Bundle outState) {
         // Save track list if available.
-        if (mTrackAdapter.getCount() > 0) {
+        if (mTrackAdapter != null && mTrackAdapter.getCount() > 0) {
             outState.putParcelableArrayList(KEY_TRACKS, mTrackAdapter.tracks);
         }
         outState.putString(KEY_MESSAGE, mMessage);
