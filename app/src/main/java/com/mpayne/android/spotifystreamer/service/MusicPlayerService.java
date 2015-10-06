@@ -45,6 +45,8 @@ public class MusicPlayerService extends Service implements
     private List<Track> mTrackList;
     private int mTrackPosition;
     private Track mTrack;
+    private int mTrackDuration = -1;
+    private int mTrackProgress = -1;
 
     private Handler mHandler;
 
@@ -113,9 +115,8 @@ public class MusicPlayerService extends Service implements
                 playPreviousTrack();
                 break;
             case ACTION_CHANGE_TRACK_PROGRESS:
-                if(mMediaPlayer.isPlaying()) {
-                    mMediaPlayer.seekTo(intent.getIntExtra(EXTRA_TRACK_PROGRESS, -1));
-                }
+                mMediaPlayer.seekTo(intent.getIntExtra(EXTRA_TRACK_PROGRESS, -1));
+                broadcastTrackProgress();
                 break;
         }
 
@@ -126,6 +127,8 @@ public class MusicPlayerService extends Service implements
     public void onCompletion(MediaPlayer mp) {
         // No need to broadcast progress while track isn't playing
         mHandler.removeCallbacks(sendBroadcasts);
+        mTrackDuration = -1;
+        mTrackProgress = -1;
         playNextTrack();
     }
 
@@ -139,6 +142,7 @@ public class MusicPlayerService extends Service implements
         if(mp != null) {
             // Start playing the track, broadcast progress and track details
             mp.start();
+            mTrackDuration = mp.getDuration();
             mHandler.post(sendBroadcasts);
             broadcastTrackPlayStatus();
             broadcastTrackDetail();
@@ -190,7 +194,8 @@ public class MusicPlayerService extends Service implements
     }
 
     private void broadcastTrackProgress() {
-        mTrackProgressIntent.putExtra(EXTRA_TRACK_PROGRESS, mMediaPlayer.getCurrentPosition());
+        mTrackProgress = mMediaPlayer.getCurrentPosition();
+        mTrackProgressIntent.putExtra(EXTRA_TRACK_PROGRESS, mTrackProgress);
         sendLocalBroadcast(mTrackProgressIntent);
     }
 
@@ -203,11 +208,16 @@ public class MusicPlayerService extends Service implements
         mTrackDetailIntent.putExtra(EXTRA_ARTIST_NAME, mArtistName);
         mTrackDetailIntent.putExtra(EXTRA_TRACK, mTrack);
         sendLocalBroadcast(mTrackDetailIntent);
-        // track may not be prepared yet
-        if(mMediaPlayer.isPlaying()) {
-            mTrackDurationIntent.putExtra(EXTRA_TRACK_DURATION, mMediaPlayer.getDuration());
+        // Need duration and progress if paused and then scrubbed and/or orientation changed.
+        // Keeping logic here instead of trying to save data in fragment.
+        if(mTrackDuration > -1) {
+            mTrackDurationIntent.putExtra(EXTRA_TRACK_DURATION, mTrackDuration);
             sendLocalBroadcast(mTrackDurationIntent);
         }
+        if(mTrackProgress > -1) {
+            broadcastTrackProgress();
+        }
+
     }
 
     private void sendLocalBroadcast(Intent intent){
